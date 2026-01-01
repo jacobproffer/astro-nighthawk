@@ -16,7 +16,7 @@ const cloudSpeed = 8;
       <Image
         src={cloud}
         alt=""
-        class="cloud absolute opacity-20"
+        class="cloud absolute opacity-20 blur-[1px]"
         data-cloud-index={i}
         style="will-change: transform;"
         loading="eager"
@@ -91,10 +91,3 @@ const cloudSpeed = 8;
   renderClouds(); // Initial render
   animate();
 </script>
-
-<style>
-  .cloud {
-    image-rendering: auto;
-    filter: blur(1px); /* Optional: adds softness */
-  }
-</style>
