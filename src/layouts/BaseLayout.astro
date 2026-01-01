@@ -10,14 +10,14 @@ interface Props {
 const { pageTitle, pageDescription } = Astro.props;
 ---
 
-<html lang="en">
+<html class="h-screen" lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="generator" content={Astro.generator} />
     <SiteSEO seo={{ title: pageTitle, description: pageDescription }} />
   </head>
-  <body>
+  <body class="h-screen">
     <main id="content">
       <slot />
     </main>
