@@ -1,8 +1,6 @@
 ---
 import "@styles/global.css";
 import SiteSEO from "@components/SiteSEO.astro";
-import Header from "@components/Header.astro";
-import Footer from "@components/Footer.astro";
 
 interface Props {
   pageTitle: string;
@@ -20,10 +18,8 @@ const { pageTitle, pageDescription } = Astro.props;
     <SiteSEO seo={{ title: pageTitle, description: pageDescription }} />
   </head>
   <body>
-    <Header />
     <main id="content">
       <slot />
     </main>
-    <Footer />
   </body>
 </html>
