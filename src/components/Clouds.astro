@@ -31,6 +31,19 @@ const cloudSpeed = 8;
   const xSize = new Array(numberOfClouds);
   const ySize = new Array(numberOfClouds);
 
+  // Cloud size constraints
+  const MAX_CLOUD_HEIGHT = 400; // Maximum possible height (200 + 200)
+
+  // Cache cloud elements to avoid repeated DOM queries
+  let cloudElements = [];
+
+  // Accessibility: check for reduced motion preference
+  const reducedMotionQuery = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  );
+  const prefersReducedMotion = reducedMotionQuery.matches;
+  let animationId = null;
+
   // Dynamic screen dimensions
   let screenWidth = window.innerWidth;
   let screenHeight = window.innerHeight;
@@ -54,18 +67,18 @@ const cloudSpeed = 8;
       // Move cloud down by cloudSpeed
       yPos[i] = yPos[i] + cloudSpeed;
 
-      // Reset cloud to top when it goes off-screen (matching Java logic)
+      // Reset cloud to top when it goes off-screen
+      // Position above screen by max cloud height to ensure smooth entry
       if (yPos[i] > screenHeight) {
         xPos[i] = Math.random() * screenWidth;
-        yPos[i] = -400;
+        yPos[i] = -MAX_CLOUD_HEIGHT;
       }
     }
   }
 
   // Render clouds to DOM
   function renderClouds() {
-    const clouds = document.querySelectorAll(".cloud");
-    clouds.forEach((cloud, i) => {
+    cloudElements.forEach((cloud, i) => {
       cloud.style.transform = `translate(${xPos[i]}px, ${yPos[i]}px)`;
       cloud.style.width = `${xSize[i]}px`;
       cloud.style.height = `${ySize[i]}px`;
@@ -74,19 +87,59 @@ const cloudSpeed = 8;
 
   // Animation loop (matching Java's 60ms interval in run() method)
   function animate() {
-    updateClouds();
-    renderClouds();
-    requestAnimationFrame(animate);
+    // Skip animation if user prefers reduced motion
+    if (!prefersReducedMotion) {
+      updateClouds();
+      renderClouds();
+    }
+    animationId = requestAnimationFrame(animate);
   }
 
-  // Handle window resize
-  window.addEventListener("resize", () => {
+  // Event handlers (defined separately for cleanup)
+  const handleResize = () => {
     screenWidth = window.innerWidth;
     screenHeight = window.innerHeight;
-  });
+  };
 
+  const handleMotionPreferenceChange = (e) => {
+    if (e.matches && animationId) {
+      // User enabled reduced motion - stop animation
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    } else if (!e.matches && !animationId) {
+      // User disabled reduced motion - restart animation
+      animate();
+    }
+  };
+
+  // Cleanup function to prevent memory leaks
+  const cleanup = () => {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    window.removeEventListener("resize", handleResize);
+    reducedMotionQuery.removeEventListener(
+      "change",
+      handleMotionPreferenceChange
+    );
+  };
+
+  // Handle window resize
+  window.addEventListener("resize", handleResize);
+
+  // Listen for changes to reduced motion preference
+  reducedMotionQuery.addEventListener("change", handleMotionPreferenceChange);
+
+  // Cleanup on page unload
+  window.addEventListener("pagehide", cleanup);
+  window.addEventListener("beforeunload", cleanup);
   // Start animation on page load
   initClouds();
+  // Cache cloud elements once (avoids repeated DOM queries during animation)
+  cloudElements = Array.from(document.querySelectorAll(".cloud"));
   renderClouds(); // Initial render
-  animate();
+  if (!prefersReducedMotion) {
+    animate();
+  }
 </script>
