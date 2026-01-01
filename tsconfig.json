@@ -6,6 +6,7 @@
     "baseUrl": ".",
     "jsx": "react-jsx",
     "paths": {
+      "@assets/*": ["src/assets/*"],
       "@styles/*": ["src/styles/*"],
       "@components/*": ["src/components/*"],
       "@layouts/*": ["src/layouts/*"]

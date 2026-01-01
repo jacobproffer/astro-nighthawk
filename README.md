@@ -1,4 +1,4 @@
-# Astro Starter
+# Nighthawk
 
 Made with Astro and Tailwind.
 
