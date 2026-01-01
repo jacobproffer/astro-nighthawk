@@ -1,13 +1,100 @@
 ---
 import { Image } from "astro:assets";
 import cloud from "@assets/img/cloud.png";
+
+// Configuration matching Java applet
+const numberOfClouds = 40;
+const cloudSpeed = 8;
 ---
 
-<Image
-  class="absolute w-90 h-60.25"
-  src={cloud}
-  alt=""
-  widths={[360, 720]}
-  sizes="360px"
-  loading="eager"
-/>
+<div
+  id="cloud-container"
+  class="absolute inset-0 overflow-hidden pointer-events-none"
+>
+  {
+    Array.from({ length: numberOfClouds }).map((_, i) => (
+      <Image
+        src={cloud}
+        alt=""
+        class="cloud absolute opacity-20"
+        data-cloud-index={i}
+        style="will-change: transform;"
+        loading="eager"
+      />
+    ))
+  }
+</div>
+
+<script define:vars={{ numberOfClouds, cloudSpeed }}>
+  // Cloud state arrays - matching Java implementation
+  const xPos = new Array(numberOfClouds);
+  const yPos = new Array(numberOfClouds);
+  const xSize = new Array(numberOfClouds);
+  const ySize = new Array(numberOfClouds);
+
+  // Dynamic screen dimensions
+  let screenWidth = window.innerWidth;
+  let screenHeight = window.innerHeight;
+
+  // Initialize cloud positions and sizes (matching Java init() method)
+  function initClouds() {
+    screenWidth = window.innerWidth;
+    screenHeight = window.innerHeight;
+
+    for (let i = 0; i < numberOfClouds; i++) {
+      xPos[i] = Math.random() * screenWidth;
+      yPos[i] = Math.random() * screenHeight;
+      xSize[i] = Math.random() * 400 + 200; // 200-600px width
+      ySize[i] = Math.random() * 200 + 200; // 200-400px height
+    }
+  }
+
+  // Update cloud positions (matching Java run() method animation loop)
+  function updateClouds() {
+    for (let i = 0; i < numberOfClouds; i++) {
+      // Move cloud down by cloudSpeed
+      yPos[i] = yPos[i] + cloudSpeed;
+
+      // Reset cloud to top when it goes off-screen (matching Java logic)
+      if (yPos[i] > screenHeight) {
+        xPos[i] = Math.random() * screenWidth;
+        yPos[i] = -400;
+      }
+    }
+  }
+
+  // Render clouds to DOM
+  function renderClouds() {
+    const clouds = document.querySelectorAll(".cloud");
+    clouds.forEach((cloud, i) => {
+      cloud.style.transform = `translate(${xPos[i]}px, ${yPos[i]}px)`;
+      cloud.style.width = `${xSize[i]}px`;
+      cloud.style.height = `${ySize[i]}px`;
+    });
+  }
+
+  // Animation loop (matching Java's 60ms interval in run() method)
+  function animate() {
+    updateClouds();
+    renderClouds();
+    requestAnimationFrame(animate);
+  }
+
+  // Handle window resize
+  window.addEventListener("resize", () => {
+    screenWidth = window.innerWidth;
+    screenHeight = window.innerHeight;
+  });
+
+  // Start animation on page load
+  initClouds();
+  renderClouds(); // Initial render
+  animate();
+</script>
+
+<style>
+  .cloud {
+    image-rendering: auto;
+    filter: blur(1px); /* Optional: adds softness */
+  }
+</style>
