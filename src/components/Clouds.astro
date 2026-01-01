@@ -1,0 +1,145 @@
+---
+import { Image } from "astro:assets";
+import cloud from "@assets/img/cloud.png";
+
+// Configuration matching Java applet
+const numberOfClouds = 40;
+const cloudSpeed = 8;
+---
+
+<div
+  id="cloud-container"
+  class="absolute inset-0 overflow-hidden pointer-events-none"
+>
+  {
+    Array.from({ length: numberOfClouds }).map((_, i) => (
+      <Image
+        src={cloud}
+        alt=""
+        class="cloud absolute opacity-20 blur-[1px] will-change-transform"
+        data-cloud-index={i}
+        loading="eager"
+      />
+    ))
+  }
+</div>
+
+<script define:vars={{ numberOfClouds, cloudSpeed }}>
+  // Cloud state arrays - matching Java implementation
+  const xPos = new Array(numberOfClouds);
+  const yPos = new Array(numberOfClouds);
+  const xSize = new Array(numberOfClouds);
+  const ySize = new Array(numberOfClouds);
+
+  // Cloud size constraints
+  const MAX_CLOUD_HEIGHT = 400; // Maximum possible height (200 + 200)
+
+  // Cache cloud elements to avoid repeated DOM queries
+  let cloudElements = [];
+
+  // Accessibility: check for reduced motion preference
+  const reducedMotionQuery = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  );
+  const prefersReducedMotion = reducedMotionQuery.matches;
+  let animationId = null;
+
+  // Dynamic screen dimensions
+  let screenWidth = window.innerWidth;
+  let screenHeight = window.innerHeight;
+
+  // Initialize cloud positions and sizes (matching Java init() method)
+  function initClouds() {
+    screenWidth = window.innerWidth;
+    screenHeight = window.innerHeight;
+
+    for (let i = 0; i < numberOfClouds; i++) {
+      xPos[i] = Math.random() * screenWidth;
+      yPos[i] = Math.random() * screenHeight;
+      xSize[i] = Math.random() * 400 + 200; // 200-600px width
+      ySize[i] = Math.random() * 200 + 200; // 200-400px height
+    }
+  }
+
+  // Update cloud positions (matching Java run() method animation loop)
+  function updateClouds() {
+    for (let i = 0; i < numberOfClouds; i++) {
+      // Move cloud down by cloudSpeed
+      yPos[i] = yPos[i] + cloudSpeed;
+
+      // Reset cloud to top when it goes off-screen
+      // Position above screen by max cloud height to ensure smooth entry
+      if (yPos[i] > screenHeight) {
+        xPos[i] = Math.random() * screenWidth;
+        yPos[i] = -MAX_CLOUD_HEIGHT;
+      }
+    }
+  }
+
+  // Render clouds to DOM
+  function renderClouds() {
+    cloudElements.forEach((cloud, i) => {
+      cloud.style.transform = `translate(${xPos[i]}px, ${yPos[i]}px)`;
+      cloud.style.width = `${xSize[i]}px`;
+      cloud.style.height = `${ySize[i]}px`;
+    });
+  }
+
+  // Animation loop (matching Java's 60ms interval in run() method)
+  function animate() {
+    // Skip animation if user prefers reduced motion
+    if (!prefersReducedMotion) {
+      updateClouds();
+      renderClouds();
+    }
+    animationId = requestAnimationFrame(animate);
+  }
+
+  // Event handlers (defined separately for cleanup)
+  const handleResize = () => {
+    screenWidth = window.innerWidth;
+    screenHeight = window.innerHeight;
+  };
+
+  const handleMotionPreferenceChange = (e) => {
+    if (e.matches && animationId) {
+      // User enabled reduced motion - stop animation
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    } else if (!e.matches && !animationId) {
+      // User disabled reduced motion - restart animation
+      animate();
+    }
+  };
+
+  // Cleanup function to prevent memory leaks
+  const cleanup = () => {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
+    }
+    window.removeEventListener("resize", handleResize);
+    reducedMotionQuery.removeEventListener(
+      "change",
+      handleMotionPreferenceChange
+    );
+  };
+
+  // Handle window resize
+  window.addEventListener("resize", handleResize);
+
+  // Listen for changes to reduced motion preference
+  reducedMotionQuery.addEventListener("change", handleMotionPreferenceChange);
+
+  // Cleanup on page unload
+  window.addEventListener("pagehide", cleanup);
+  window.addEventListener("beforeunload", cleanup);
+  // Start animation on page load
+  initClouds();
+  // Cache cloud elements once (avoids repeated DOM queries during animation)
+  cloudElements = Array.from(document.querySelectorAll(".cloud"));
+  renderClouds(); // Initial render
+  if (!prefersReducedMotion) {
+    animate();
+  }
+</script>
