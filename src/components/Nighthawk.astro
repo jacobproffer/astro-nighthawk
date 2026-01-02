@@ -5,7 +5,7 @@ import nighthawk from "@assets/img/nighthawk.png";
 
 <Image
   id="nighthawk"
-  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5"
+  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5 -translate-x-1/2"
   src={nighthawk}
   alt="F-117 Nighthawk"
   widths={[68, 136]}
@@ -15,106 +15,184 @@ import nighthawk from "@assets/img/nighthawk.png";
 
 <script>
   const nighthawk = document.getElementById("nighthawk") as HTMLElement;
-  let xPosition = 0;
-  let xVelocity = 0;
-  let tilt = 0;
-  let minBoundary = 0;
-  let maxBoundary = 0;
 
-  const acceleration = 0.5;
-  const maxSpeed = 5;
-  const friction = 0.92;
-  const tiltAmount = 15; // degrees
+  if (nighthawk) {
+    let xPosition = 0;
+    let xVelocity = 0;
+    let tilt = 0;
+    let minBoundary = 0;
+    let maxBoundary = 0;
 
-  const keys = {
-    a: false,
-    d: false,
-  };
+    const acceleration = 0.5;
+    const maxSpeed = 5;
+    const friction = 0.92;
+    const tiltAmount = 15; // degrees
 
-  function calculateBoundaries() {
-    const viewportWidth = window.innerWidth;
-    const nighthawkWidth = nighthawk.offsetWidth;
+    const keys = {
+      a: false,
+      d: false,
+    };
 
-    // Calculate how far the plane can move from center
-    // Account for the plane being centered at 50% initially
-    minBoundary = -(viewportWidth / 2 - nighthawkWidth / 2);
-    maxBoundary = viewportWidth / 2 - nighthawkWidth / 2;
-  }
+    function calculateBoundaries() {
+      const viewportWidth = window.innerWidth;
+      const nighthawkWidth = nighthawk.offsetWidth;
 
-  function updatePhysics() {
-    // Apply acceleration based on key presses
-    if (keys.a) {
-      xVelocity -= acceleration;
-    }
-    if (keys.d) {
-      xVelocity += acceleration;
+      // Calculate how far the plane can move from center
+      // Account for the plane being centered at 50% initially
+      minBoundary = -(viewportWidth / 2 - nighthawkWidth / 2);
+      maxBoundary = viewportWidth / 2 - nighthawkWidth / 2;
     }
 
-    // Apply friction when no keys are pressed
-    if (!keys.a && !keys.d) {
-      xVelocity *= friction;
+    function updatePhysics() {
+      // Apply acceleration based on key presses
+      if (keys.a) {
+        xVelocity -= acceleration;
+      }
+      if (keys.d) {
+        xVelocity += acceleration;
+      }
+
+      // Apply friction when no keys are pressed
+      if (!keys.a && !keys.d) {
+        xVelocity *= friction;
+      }
+
+      // Clamp velocity to max speed
+      xVelocity = Math.max(-maxSpeed, Math.min(maxSpeed, xVelocity));
+
+      // Update position
+      xPosition += xVelocity;
+
+      // Apply boundaries and stop velocity if hitting the edge
+      if (xPosition < minBoundary) {
+        xPosition = minBoundary;
+        xVelocity = 0;
+      } else if (xPosition > maxBoundary) {
+        xPosition = maxBoundary;
+        xVelocity = 0;
+      }
+
+      // Calculate tilt based on velocity
+      tilt = (xVelocity / maxSpeed) * tiltAmount;
+
+      // Stop completely if velocity is very small
+      if (Math.abs(xVelocity) < 0.01) {
+        xVelocity = 0;
+      }
+
+      updatePosition();
     }
 
-    // Clamp velocity to max speed
-    xVelocity = Math.max(-maxSpeed, Math.min(maxSpeed, xVelocity));
-
-    // Update position
-    xPosition += xVelocity;
-
-    // Apply boundaries and stop velocity if hitting the edge
-    if (xPosition < minBoundary) {
-      xPosition = minBoundary;
-      xVelocity = 0;
-    } else if (xPosition > maxBoundary) {
-      xPosition = maxBoundary;
-      xVelocity = 0;
+    function updatePosition() {
+      nighthawk.style.transform = `translateX(calc(-50% + ${xPosition}px)) rotateZ(${tilt}deg)`;
     }
 
-    // Calculate tilt based on velocity
-    tilt = (xVelocity / maxSpeed) * tiltAmount;
+    let animationFrameId: number | null = null;
+    let isAnimating = false;
 
-    // Stop completely if velocity is very small
-    if (Math.abs(xVelocity) < 0.01) {
-      xVelocity = 0;
+    function animate() {
+      // Stop if element has been removed from DOM
+      if (!document.contains(nighthawk)) {
+        cleanup();
+        return;
+      }
+
+      updatePhysics();
+
+      // Continue animation if there's movement or keys are pressed
+      if (xVelocity !== 0 || keys.a || keys.d) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        isAnimating = false;
+        animationFrameId = null;
+      }
     }
 
-    updatePosition();
-  }
+    function startAnimation() {
+      if (!isAnimating) {
+        isAnimating = true;
+        animate();
+      }
+    }
 
-  function updatePosition() {
-    nighthawk.style.transform = `translateX(calc(-50% + ${xPosition}px)) rotateZ(${tilt}deg)`;
-  }
+    // Event handler functions
+    const handleResize = () => {
+      calculateBoundaries();
+    };
 
-  function animate() {
-    updatePhysics();
-    requestAnimationFrame(animate);
-  }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore if typing in an input field or using modifier keys
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey
+      ) {
+        return;
+      }
 
-  // Initialize boundaries and position
-  calculateBoundaries();
-  updatePosition();
+      if (event.key === "a" || event.key === "A") {
+        event.preventDefault();
+        keys.a = true;
+        startAnimation();
+      } else if (event.key === "d" || event.key === "D") {
+        event.preventDefault();
+        keys.d = true;
+        startAnimation();
+      }
+    };
 
-  // Start animation loop
-  animate();
+    const handleKeyUp = (event: KeyboardEvent) => {
+      // Ignore if typing in an input field or using modifier keys
+      const target = event.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        event.shiftKey
+      ) {
+        return;
+      }
 
-  // Recalculate boundaries on window resize
-  window.addEventListener("resize", () => {
+      if (event.key === "a" || event.key === "A") {
+        keys.a = false;
+      } else if (event.key === "d" || event.key === "D") {
+        keys.d = false;
+      }
+    };
+
+    // Cleanup function to remove event listeners and cancel animation
+    function cleanup() {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      isAnimating = false;
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keyup", handleKeyUp);
+    }
+
+    // Initialize boundaries and position
     calculateBoundaries();
-  });
+    updatePosition();
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "a" || event.key === "A") {
-      keys.a = true;
-    } else if (event.key === "d" || event.key === "D") {
-      keys.d = true;
-    }
-  });
+    // Add event listeners
+    window.addEventListener("resize", handleResize);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keyup", handleKeyUp);
 
-  document.addEventListener("keyup", (event) => {
-    if (event.key === "a" || event.key === "A") {
-      keys.a = false;
-    } else if (event.key === "d" || event.key === "D") {
-      keys.d = false;
-    }
-  });
+    // Cleanup on page navigation (Astro view transitions)
+    document.addEventListener("astro:before-preparation", cleanup);
+    document.addEventListener("astro:page-load", cleanup);
+  } else {
+    console.error("Nighthawk element not found");
+  }
 </script>
