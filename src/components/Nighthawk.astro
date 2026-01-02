@@ -4,10 +4,117 @@ import nighthawk from "@assets/img/nighthawk.png";
 ---
 
 <Image
-  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5 -translate-x-1/2"
+  id="nighthawk"
+  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5"
   src={nighthawk}
   alt="F-117 Nighthawk"
   widths={[68, 136]}
   sizes="68px"
   loading="eager"
 />
+
+<script>
+  const nighthawk = document.getElementById("nighthawk") as HTMLElement;
+  let xPosition = 0;
+  let xVelocity = 0;
+  let tilt = 0;
+  let minBoundary = 0;
+  let maxBoundary = 0;
+
+  const acceleration = 0.5;
+  const maxSpeed = 5;
+  const friction = 0.92;
+  const tiltAmount = 15; // degrees
+
+  const keys = {
+    a: false,
+    d: false,
+  };
+
+  function calculateBoundaries() {
+    const viewportWidth = window.innerWidth;
+    const nighthawkWidth = nighthawk.offsetWidth;
+
+    // Calculate how far the plane can move from center
+    // Account for the plane being centered at 50% initially
+    minBoundary = -(viewportWidth / 2 - nighthawkWidth / 2);
+    maxBoundary = viewportWidth / 2 - nighthawkWidth / 2;
+  }
+
+  function updatePhysics() {
+    // Apply acceleration based on key presses
+    if (keys.a) {
+      xVelocity -= acceleration;
+    }
+    if (keys.d) {
+      xVelocity += acceleration;
+    }
+
+    // Apply friction when no keys are pressed
+    if (!keys.a && !keys.d) {
+      xVelocity *= friction;
+    }
+
+    // Clamp velocity to max speed
+    xVelocity = Math.max(-maxSpeed, Math.min(maxSpeed, xVelocity));
+
+    // Update position
+    xPosition += xVelocity;
+
+    // Apply boundaries and stop velocity if hitting the edge
+    if (xPosition < minBoundary) {
+      xPosition = minBoundary;
+      xVelocity = 0;
+    } else if (xPosition > maxBoundary) {
+      xPosition = maxBoundary;
+      xVelocity = 0;
+    }
+
+    // Calculate tilt based on velocity
+    tilt = (xVelocity / maxSpeed) * tiltAmount;
+
+    // Stop completely if velocity is very small
+    if (Math.abs(xVelocity) < 0.01) {
+      xVelocity = 0;
+    }
+
+    updatePosition();
+  }
+
+  function updatePosition() {
+    nighthawk.style.transform = `translateX(calc(-50% + ${xPosition}px)) rotateZ(${tilt}deg)`;
+  }
+
+  function animate() {
+    updatePhysics();
+    requestAnimationFrame(animate);
+  }
+
+  // Initialize boundaries and position
+  calculateBoundaries();
+  updatePosition();
+
+  // Start animation loop
+  animate();
+
+  // Recalculate boundaries on window resize
+  window.addEventListener("resize", () => {
+    calculateBoundaries();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "a" || event.key === "A") {
+      keys.a = true;
+    } else if (event.key === "d" || event.key === "D") {
+      keys.d = true;
+    }
+  });
+
+  document.addEventListener("keyup", (event) => {
+    if (event.key === "a" || event.key === "A") {
+      keys.a = false;
+    } else if (event.key === "d" || event.key === "D") {
+      keys.d = false;
+    }
+  });
+</script>
