@@ -30,7 +30,19 @@
     window.gameAPI.playerCanMove = false;
     window.gameAPI.missilesActive = false;
 
+    let hasStarted = false;
+
     const handleStart = () => {
+      // Prevent multiple invocations
+      if (hasStarted) {
+        return;
+      }
+      hasStarted = true;
+
+      // Remove event listeners to prevent further calls
+      beginButton.removeEventListener("click", handleStart);
+      beginButton.removeEventListener("keydown", handleKeyDown);
+
       // Allow player to move immediately
       if (window.gameAPI) {
         window.gameAPI.playerCanMove = true;
@@ -57,16 +69,18 @@
       }, 2500); // 500ms fade + 2000ms delay
     };
 
-    // Start on button click
-    beginButton.addEventListener("click", handleStart);
-
-    // Also support pressing Enter or Space when button is focused
-    beginButton.addEventListener("keydown", (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         handleStart();
       }
-    });
+    };
+
+    // Start on button click
+    beginButton.addEventListener("click", handleStart);
+
+    // Also support pressing Enter or Space when button is focused
+    beginButton.addEventListener("keydown", handleKeyDown);
 
     // Auto-focus the button for keyboard accessibility
     beginButton.focus();

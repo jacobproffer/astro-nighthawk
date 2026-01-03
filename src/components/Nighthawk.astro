@@ -152,11 +152,7 @@ import nighthawk from "@assets/img/nighthawk.png";
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      // Don't allow movement until player can move
-      if (!window.gameAPI?.playerCanMove) {
-        return;
-      }
-
+      // Always process key releases to maintain accurate key state
       // Ignore if typing in an input field or using modifier keys
       const target = event.target as HTMLElement;
       if (
