@@ -24,16 +24,27 @@ const initialSpeed = 8; // Slowed down for web version
   }
 </div>
 
+<style>
+  .missile-hidden {
+    visibility: hidden;
+  }
+</style>
+
 <script define:vars={{ numberOfMissiles, initialSpeed }}>
   // Missile state arrays - matching Java implementation
-  const xPos = new Array(numberOfMissiles);
-  const yPos = new Array(numberOfMissiles);
-  const onScreen = new Array(numberOfMissiles); // Visibility state
+  const xPos = new Array(numberOfMissiles).fill(0);
+  const yPos = new Array(numberOfMissiles).fill(0);
+  const onScreen = new Array(numberOfMissiles).fill(false); // Visibility state
+  const prevOnScreen = new Array(numberOfMissiles).fill(false); // Track previous visibility
   let speed = initialSpeed; // Global speed (static in Java)
 
   // Missile image dimensions (centered at -20, -20 in Java)
   const MISSILE_SIZE = 40;
   const MISSILE_OFFSET = MISSILE_SIZE / 2;
+
+  // Off-screen spawn range: Java used -1600 in an 800px tall applet (2x height)
+  // Making this proportional to screen height for better adaptability
+  const SPAWN_HEIGHT_MULTIPLIER = 2;
 
   // Cache missile elements to avoid repeated DOM queries
   let missileElements = [];
@@ -56,7 +67,7 @@ const initialSpeed = 8; // Slowed down for web version
 
     for (let i = 0; i < numberOfMissiles; i++) {
       xPos[i] = Math.random() * screenWidth; // Full width of browser
-      yPos[i] = Math.random() * -1600; // -1600 to 0 (off-screen above)
+      yPos[i] = Math.random() * -screenHeight * SPAWN_HEIGHT_MULTIPLIER; // Off-screen above
       onScreen[i] = true;
     }
   }
@@ -64,7 +75,7 @@ const initialSpeed = 8; // Slowed down for web version
   // Reset individual missile (matching Java reset() method)
   function resetMissile(i) {
     xPos[i] = Math.random() * screenWidth;
-    yPos[i] = Math.random() * -1600;
+    yPos[i] = Math.random() * -screenHeight * SPAWN_HEIGHT_MULTIPLIER;
     onScreen[i] = true;
   }
 
@@ -115,10 +126,17 @@ const initialSpeed = 8; // Slowed down for web version
     missileElements.forEach((missile, i) => {
       if (onScreen[i]) {
         // Draw at x-20, y-20 to center the missile (matching Java paint)
-        missile.style.transform = `translate(${xPos[i] - MISSILE_OFFSET}px, ${yPos[i] - MISSILE_OFFSET}px)`;
-        missile.style.visibility = "visible";
-      } else {
-        missile.style.visibility = "hidden";
+        // Use translate3d for hardware acceleration hint
+        missile.style.transform = `translate3d(${xPos[i] - MISSILE_OFFSET}px, ${yPos[i] - MISSILE_OFFSET}px, 0)`;
+        // Only update visibility when it changes
+        if (prevOnScreen[i] !== onScreen[i]) {
+          missile.classList.remove("missile-hidden");
+          prevOnScreen[i] = true;
+        }
+      } else if (prevOnScreen[i] !== onScreen[i]) {
+        // Only update visibility when it changes
+        missile.classList.add("missile-hidden");
+        prevOnScreen[i] = false;
       }
     });
   }
@@ -158,6 +176,12 @@ const initialSpeed = 8; // Slowed down for web version
       "change",
       handleMotionPreferenceChange
     );
+    // Clean up global API to prevent memory leaks
+    if (window.gameAPI?.missiles) {
+      delete window.gameAPI.missiles;
+    }
+    // Clear callback reference
+    onMissileReachedBottom = null;
   };
 
   // Handle window resize
@@ -170,17 +194,38 @@ const initialSpeed = 8; // Slowed down for web version
   window.addEventListener("pagehide", cleanup);
   window.addEventListener("beforeunload", cleanup);
 
-  // Start animation on page load
-  initMissiles();
-  // Cache missile elements once
-  missileElements = Array.from(document.querySelectorAll(".missile"));
-  renderMissiles(); // Initial render
-  if (!prefersReducedMotion) {
-    animate();
+  // Initialize when DOM is ready
+  function startMissiles() {
+    initMissiles();
+    // Cache missile elements once DOM is guaranteed to be ready
+    // Use specific selector and sort by data-missile-index to ensure correct order
+    const elements = document.querySelectorAll(
+      "#missile-container [data-missile-index]"
+    );
+    missileElements = Array.from(elements).sort(
+      (a, b) =>
+        parseInt(a.dataset.missileIndex) - parseInt(b.dataset.missileIndex)
+    );
+    renderMissiles(); // Initial render
+    if (!prefersReducedMotion) {
+      animate();
+    }
+  }
+
+  // Ensure DOM is fully loaded before querying elements
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startMissiles);
+  } else {
+    // DOM already loaded, start immediately
+    startMissiles();
   }
 
   // Export functions for external use (e.g., collision detection, game logic)
-  window.missileAPI = {
+  // Using namespaced approach to avoid global pollution
+  if (!window.gameAPI) {
+    window.gameAPI = {};
+  }
+  window.gameAPI.missiles = {
     distanceTo,
     explode,
     changeSpeed,
