@@ -84,7 +84,7 @@ import nighthawk from "@assets/img/nighthawk.png";
     }
 
     function updatePosition() {
-      nighthawk.style.transform = `translateX(calc(-50% + ${xPosition}px)) rotateZ(${tilt}deg)`;
+      nighthawk.style.transform = `translate(-50%, 0) translateX(${xPosition}px) rotateZ(${tilt}deg)`;
     }
 
     let animationFrameId: number | null = null;
