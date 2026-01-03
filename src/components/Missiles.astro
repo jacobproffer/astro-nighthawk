@@ -5,6 +5,8 @@ import missile from "@assets/img/missile.png";
 // Configuration matching Java applet
 const numberOfMissiles = 10; // Adjust based on difficulty
 const initialSpeed = 8; // Slowed down for web version
+const speedIncrement = 10; // How much speed increases per level
+const maxSpeed = 30; // Maximum missile speed cap
 ---
 
 <div
@@ -30,7 +32,9 @@ const initialSpeed = 8; // Slowed down for web version
   }
 </style>
 
-<script define:vars={{ numberOfMissiles, initialSpeed }}>
+<script
+  define:vars={{ numberOfMissiles, initialSpeed, speedIncrement, maxSpeed }}
+>
   // Missile state arrays - matching Java implementation
   const xPos = new Array(numberOfMissiles).fill(0);
   const yPos = new Array(numberOfMissiles).fill(0);
@@ -74,6 +78,12 @@ const initialSpeed = 8; // Slowed down for web version
 
   // Reset individual missile (matching Java reset() method)
   function resetMissile(i) {
+    if (i < 0 || i >= numberOfMissiles) {
+      console.warn(
+        `Invalid missile index: ${i}. Must be between 0 and ${numberOfMissiles - 1}`
+      );
+      return;
+    }
     xPos[i] = Math.random() * screenWidth;
     yPos[i] = Math.random() * -screenHeight * SPAWN_HEIGHT_MULTIPLIER;
     onScreen[i] = true;
@@ -81,14 +91,20 @@ const initialSpeed = 8; // Slowed down for web version
 
   // Change speed (matching Java changeSpeed() static method)
   function changeSpeed() {
-    speed = speed + 10;
-    if (speed > 30) {
-      speed = 30;
+    speed = speed + speedIncrement;
+    if (speed > maxSpeed) {
+      speed = maxSpeed;
     }
   }
 
   // Calculate distance to a point (matching Java distanceTo() method)
   function distanceTo(missileIndex, someX, someY) {
+    if (missileIndex < 0 || missileIndex >= numberOfMissiles) {
+      console.warn(
+        `Invalid missile index: ${missileIndex}. Must be between 0 and ${numberOfMissiles - 1}`
+      );
+      return Infinity; // Return Infinity to indicate no collision possible
+    }
     const dX = someX - xPos[missileIndex];
     const dY = someY - yPos[missileIndex];
     return Math.sqrt(dX * dX + dY * dY);
@@ -96,6 +112,12 @@ const initialSpeed = 8; // Slowed down for web version
 
   // Explode missile (matching Java explode() method)
   function explode(i) {
+    if (i < 0 || i >= numberOfMissiles) {
+      console.warn(
+        `Invalid missile index: ${i}. Must be between 0 and ${numberOfMissiles - 1}`
+      );
+      return;
+    }
     onScreen[i] = false;
   }
 
@@ -113,7 +135,11 @@ const initialSpeed = 8; // Slowed down for web version
         if (yPos[i] >= screenHeight) {
           // Notify game logic (for scoring: playerScore += 10)
           if (onMissileReachedBottom) {
-            onMissileReachedBottom(i);
+            try {
+              onMissileReachedBottom(i);
+            } catch (error) {
+              console.error("Error in onMissileReachedBottom callback:", error);
+            }
           }
           resetMissile(i);
         }
@@ -230,11 +256,19 @@ const initialSpeed = 8; // Slowed down for web version
     explode,
     changeSpeed,
     resetMissile,
-    getMissilePosition: (i) => ({
-      x: xPos[i],
-      y: yPos[i],
-      onScreen: onScreen[i],
-    }),
+    getMissilePosition: (i) => {
+      if (i < 0 || i >= numberOfMissiles) {
+        console.warn(
+          `Invalid missile index: ${i}. Must be between 0 and ${numberOfMissiles - 1}`
+        );
+        return null;
+      }
+      return {
+        x: xPos[i],
+        y: yPos[i],
+        onScreen: onScreen[i],
+      };
+    },
     getMissileCount: () => numberOfMissiles,
     // Set callback for when missile reaches bottom (for scoring)
     setOnMissileReachedBottom: (callback) => {
