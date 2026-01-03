@@ -57,7 +57,7 @@ const maxSpeed = 30; // Maximum missile speed cap
   const reducedMotionQuery = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   );
-  const prefersReducedMotion = reducedMotionQuery.matches;
+  let prefersReducedMotion = reducedMotionQuery.matches;
   let animationId = null;
 
   // Dynamic screen dimensions
@@ -95,6 +95,27 @@ const maxSpeed = 30; // Maximum missile speed cap
     if (speed > maxSpeed) {
       speed = maxSpeed;
     }
+  }
+
+  // Get current speed
+  function getSpeed() {
+    return speed;
+  }
+
+  // Set speed to a specific value (with bounds checking)
+  function setSpeed(newSpeed) {
+    if (typeof newSpeed !== "number" || newSpeed < 0) {
+      console.warn(
+        `Invalid speed value: ${newSpeed}. Speed must be a positive number.`
+      );
+      return;
+    }
+    speed = Math.min(newSpeed, maxSpeed);
+  }
+
+  // Reset speed back to initial value (for new game)
+  function resetSpeed() {
+    speed = initialSpeed;
   }
 
   // Calculate distance to a point (matching Java distanceTo() method)
@@ -183,10 +204,15 @@ const maxSpeed = 30; // Maximum missile speed cap
   };
 
   const handleMotionPreferenceChange = (e) => {
+    // Update the preference value to keep it in sync
+    prefersReducedMotion = e.matches;
+
     if (e.matches && animationId) {
+      // User enabled reduced motion - stop animation
       cancelAnimationFrame(animationId);
       animationId = null;
     } else if (!e.matches && !animationId) {
+      // User disabled reduced motion - restart animation
       animate();
     }
   };
@@ -255,6 +281,9 @@ const maxSpeed = 30; // Maximum missile speed cap
     distanceTo,
     explode,
     changeSpeed,
+    getSpeed,
+    setSpeed,
+    resetSpeed,
     resetMissile,
     getMissilePosition: (i) => {
       if (i < 0 || i >= numberOfMissiles) {
