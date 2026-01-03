@@ -5,7 +5,7 @@ import nighthawk from "@assets/img/nighthawk.png";
 
 <Image
   id="nighthawk"
-  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5 -translate-x-1/2"
+  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5"
   src={nighthawk}
   alt="F-117 Nighthawk"
   widths={[68, 136]}
@@ -84,7 +84,7 @@ import nighthawk from "@assets/img/nighthawk.png";
     }
 
     function updatePosition() {
-      nighthawk.style.transform = `translate(-50%, 0) translateX(${xPosition}px) rotateZ(${tilt}deg)`;
+      nighthawk.style.transform = `translateX(calc(-50% + ${xPosition}px)) rotateZ(${tilt}deg)`;
     }
 
     let animationFrameId: number | null = null;
@@ -121,6 +121,11 @@ import nighthawk from "@assets/img/nighthawk.png";
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Don't allow movement until player can move
+      if (!window.gameAPI?.playerCanMove) {
+        return;
+      }
+
       // Ignore if typing in an input field or using modifier keys
       const target = event.target as HTMLElement;
       if (
@@ -147,6 +152,7 @@ import nighthawk from "@assets/img/nighthawk.png";
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      // Always process key releases to maintain accurate key state
       // Ignore if typing in an input field or using modifier keys
       const target = event.target as HTMLElement;
       if (
