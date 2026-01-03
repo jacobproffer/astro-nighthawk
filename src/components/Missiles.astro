@@ -71,7 +71,9 @@ const maxSpeed = 30; // Maximum missile speed cap
 
     for (let i = 0; i < numberOfMissiles; i++) {
       xPos[i] = Math.random() * screenWidth; // Full width of browser
-      yPos[i] = Math.random() * -screenHeight * SPAWN_HEIGHT_MULTIPLIER; // Off-screen above
+      // Spawn between -screenHeight and -3*screenHeight to ensure all start off-screen
+      yPos[i] =
+        -screenHeight - Math.random() * screenHeight * SPAWN_HEIGHT_MULTIPLIER;
       onScreen[i] = true;
     }
   }
@@ -85,7 +87,9 @@ const maxSpeed = 30; // Maximum missile speed cap
       return;
     }
     xPos[i] = Math.random() * screenWidth;
-    yPos[i] = Math.random() * -screenHeight * SPAWN_HEIGHT_MULTIPLIER;
+    // Spawn between -screenHeight and -3*screenHeight to ensure all start off-screen
+    yPos[i] =
+      -screenHeight - Math.random() * screenHeight * SPAWN_HEIGHT_MULTIPLIER;
     onScreen[i] = true;
   }
 
@@ -190,7 +194,8 @@ const maxSpeed = 30; // Maximum missile speed cap
 
   // Animation loop
   function animate() {
-    if (!prefersReducedMotion) {
+    // Only update missiles if they are active
+    if (!prefersReducedMotion && window.gameAPI?.missilesActive) {
       updateMissiles();
       renderMissiles();
     }
