@@ -110,7 +110,7 @@ import nighthawk from "@assets/img/nighthawk.png";
         for (let i = 0; i < missileCount; i++) {
           const missilePos = window.gameAPI.missiles.getMissilePosition(i);
           if (missilePos && missilePos.onScreen) {
-            // Calculate distance between centers (missiles are 40x40, so center is at x+20, y+20)
+            // Calculate distance between centers (missilePos.x and missilePos.y are already the missile center)
             const dX = nighthawkCenterX - missilePos.x;
             const dY = nighthawkCenterY - missilePos.y;
             const distance = Math.sqrt(dX * dX + dY * dY);
