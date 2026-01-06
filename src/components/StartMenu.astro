@@ -114,6 +114,24 @@
     // Auto-focus the button for keyboard accessibility
     startButton.focus();
 
+    // Cleanup function to remove event listeners
+    const cleanup = () => {
+      startButton.removeEventListener("click", handleStart);
+      startButton.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("gameover", handleGameOver);
+      // Clean up global API
+      if (window.gameAPI?.showStartMenu) {
+        delete window.gameAPI.showStartMenu;
+      }
+      if (window.gameAPI?.restart) {
+        delete window.gameAPI.restart;
+      }
+    };
+
+    // Cleanup on page navigation (Astro view transitions)
+    document.addEventListener("astro:before-preparation", cleanup);
+    document.addEventListener("astro:page-load", cleanup);
+
     // Global restart function to reset all game components
     const restartGame = () => {
       // Reset nighthawk position
@@ -128,9 +146,6 @@
     };
 
     // Expose functions for external use
-    if (!window.gameAPI) {
-      window.gameAPI = {};
-    }
     window.gameAPI.showStartMenu = handleGameOver;
     window.gameAPI.restart = restartGame;
   }

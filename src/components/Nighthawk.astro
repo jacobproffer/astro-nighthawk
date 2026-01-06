@@ -212,7 +212,7 @@ import nighthawk from "@assets/img/nighthawk.png";
       isAnimating = false;
     }
 
-    // Reset function to restore initial state and restart animation
+    // Reset function to restore initial state
     function reset() {
       xPosition = 0;
       xVelocity = 0;
@@ -220,8 +220,6 @@ import nighthawk from "@assets/img/nighthawk.png";
       keys.a = false;
       keys.d = false;
       updatePosition();
-      // Restart animation on reset
-      startAnimation();
     }
 
     // Cleanup function to remove event listeners and cancel animation

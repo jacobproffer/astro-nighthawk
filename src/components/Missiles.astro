@@ -16,7 +16,7 @@ const maxSpeed = 30; // Maximum missile speed cap
   {
     Array.from({ length: numberOfMissiles }).map((_, i) => (
       <div
-        class="absolute w-10 h-10 relative will-change-transform before:content-[''] before:absolute before:bottom-full before:left-1/2 before:-translate-x-1/2 before:w-1 before:h-[60px] before:bg-gradient-to-t before:from-transparent before:via-orange-500/50 before:to-orange-600/80 before:blur before:pointer-events-none"
+        class="absolute w-10 h-10 will-change-transform before:content-[''] before:absolute before:bottom-full before:left-1/2 before:-translate-x-1/2 before:w-1 before:h-15 before:bg-linear-to-t before:from-transparent before:via-orange-500/50 before:to-orange-600/80 before:blur before:pointer-events-none"
         data-missile-index={i}
       >
         <Image
