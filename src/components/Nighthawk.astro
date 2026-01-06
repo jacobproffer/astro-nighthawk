@@ -38,10 +38,12 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
       const viewportWidth = window.innerWidth;
       const nighthawkWidth = nighthawk.offsetWidth;
 
-      // Calculate how far the plane can move from center
-      // Account for the plane being centered at 50% initially
-      minBoundary = -(viewportWidth / 2 - nighthawkWidth / 2);
-      maxBoundary = viewportWidth / 2 - nighthawkWidth / 2;
+      // Keep the entire plane on screen with some padding
+      // The plane is centered at 50% (left-1/2), so we calculate boundaries
+      // to ensure the full width stays visible
+      const padding = 10; // Extra padding from edges
+      minBoundary = -(viewportWidth / 2 - nighthawkWidth - padding);
+      maxBoundary = viewportWidth / 2 - nighthawkWidth - padding;
     }
 
     function updatePhysics() {
