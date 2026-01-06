@@ -15,19 +15,23 @@ const maxSpeed = 30; // Maximum missile speed cap
 >
   {
     Array.from({ length: numberOfMissiles }).map((_, i) => (
-      <Image
-        src={missile}
-        alt=""
-        class="missile absolute will-change-transform"
+      <div
+        class="absolute w-10 h-10 will-change-transform before:content-[''] before:absolute before:bottom-full before:left-1/2 before:-translate-x-1/2 before:w-1 before:h-15 before:bg-linear-to-t before:from-transparent before:via-orange-500/50 before:to-orange-600/80 before:blur before:pointer-events-none"
         data-missile-index={i}
-        loading="eager"
-      />
+      >
+        <Image
+          src={missile}
+          alt=""
+          class="block w-full h-full drop-shadow-[0_2px_4px_rgba(255,100,0,0.4)]"
+          loading="eager"
+        />
+      </div>
     ))
   }
 </div>
 
 <style>
-  .missile-hidden {
+  [data-missile-index].invisible {
     visibility: hidden;
   }
 </style>
@@ -181,12 +185,12 @@ const maxSpeed = 30; // Maximum missile speed cap
         missile.style.transform = `translate3d(${xPos[i] - MISSILE_OFFSET}px, ${yPos[i] - MISSILE_OFFSET}px, 0)`;
         // Only update visibility when it changes
         if (prevOnScreen[i] !== onScreen[i]) {
-          missile.classList.remove("missile-hidden");
+          missile.classList.remove("invisible");
           prevOnScreen[i] = true;
         }
       } else if (prevOnScreen[i] !== onScreen[i]) {
         // Only update visibility when it changes
-        missile.classList.add("missile-hidden");
+        missile.classList.add("invisible");
         prevOnScreen[i] = false;
       }
     });
@@ -269,6 +273,13 @@ const maxSpeed = 30; // Maximum missile speed cap
     }
   }
 
+  // Global restart function that resets all missiles
+  function restartGame() {
+    resetSpeed();
+    initMissiles();
+    renderMissiles();
+  }
+
   // Ensure DOM is fully loaded before querying elements
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startMissiles);
@@ -290,6 +301,7 @@ const maxSpeed = 30; // Maximum missile speed cap
     setSpeed,
     resetSpeed,
     resetMissile,
+    restartGame,
     getMissilePosition: (i) => {
       if (i < 0 || i >= numberOfMissiles) {
         console.warn(
