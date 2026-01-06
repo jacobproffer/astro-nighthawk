@@ -316,6 +316,7 @@ const maxSpeed = 30; // Maximum missile speed cap
       };
     },
     getMissileCount: () => numberOfMissiles,
+    getMissileSize: () => MISSILE_SIZE,
     // Set callback for when missile reaches bottom (for scoring)
     setOnMissileReachedBottom: (callback) => {
       onMissileReachedBottom = callback;

@@ -21,6 +21,7 @@ interface GameAPI {
       onScreen: boolean;
     } | null;
     getMissileCount: () => number;
+    getMissileSize: () => number;
     setOnMissileReachedBottom: (callback: (index: number) => void) => void;
   };
   nighthawk?: {
