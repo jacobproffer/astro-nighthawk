@@ -27,6 +27,7 @@ import nighthawk from "@assets/img/nighthawk.png";
     const maxSpeed = 5;
     const friction = 0.92;
     const tiltAmount = 15; // degrees
+    const collisionDistance = 40; // pixels - collision threshold
 
     const keys = {
       a: false,
@@ -98,6 +99,34 @@ import nighthawk from "@assets/img/nighthawk.png";
       }
 
       updatePhysics();
+
+      // Check for collisions with missiles if game is active
+      if (window.gameAPI?.gameStarted && window.gameAPI?.missiles) {
+        const nighthawkRect = nighthawk.getBoundingClientRect();
+        const nighthawkCenterX = nighthawkRect.left + nighthawkRect.width / 2;
+        const nighthawkCenterY = nighthawkRect.top + nighthawkRect.height / 2;
+
+        const missileCount = window.gameAPI.missiles.getMissileCount();
+        for (let i = 0; i < missileCount; i++) {
+          const missilePos = window.gameAPI.missiles.getMissilePosition(i);
+          if (missilePos && missilePos.onScreen) {
+            // Calculate distance between centers (missiles are 40x40, so center is at x+20, y+20)
+            const dX = nighthawkCenterX - missilePos.x;
+            const dY = nighthawkCenterY - missilePos.y;
+            const distance = Math.sqrt(dX * dX + dY * dY);
+
+            if (distance < collisionDistance) {
+              // Collision detected!
+              window.gameAPI.missiles.explode(i);
+              // Trigger game over
+              window.dispatchEvent(new CustomEvent("gameover"));
+              // Stop animation but keep event listeners
+              stopAnimation();
+              return;
+            }
+          }
+        }
+      }
 
       // Continue animation if there's movement or keys are pressed
       if (xVelocity !== 0 || keys.a || keys.d) {
@@ -174,16 +203,37 @@ import nighthawk from "@assets/img/nighthawk.png";
       }
     };
 
-    // Cleanup function to remove event listeners and cancel animation
-    function cleanup() {
+    // Stop animation without removing event listeners
+    function stopAnimation() {
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
       isAnimating = false;
+    }
+
+    // Reset function to restore initial state and restart animation
+    function reset() {
+      xPosition = 0;
+      xVelocity = 0;
+      tilt = 0;
+      keys.a = false;
+      keys.d = false;
+      updatePosition();
+      // Restart animation on reset
+      startAnimation();
+    }
+
+    // Cleanup function to remove event listeners and cancel animation
+    function cleanup() {
+      stopAnimation();
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
+      // Clean up API
+      if (window.gameAPI?.nighthawk) {
+        delete window.gameAPI.nighthawk;
+      }
     }
 
     // Initialize boundaries and position
@@ -194,6 +244,21 @@ import nighthawk from "@assets/img/nighthawk.png";
     window.addEventListener("resize", handleResize);
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
+
+    // Expose functions for game control
+    if (!window.gameAPI) {
+      window.gameAPI = {};
+    }
+    window.gameAPI.nighthawk = {
+      reset,
+      getNighthawkPosition: () => {
+        const rect = nighthawk.getBoundingClientRect();
+        return {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        };
+      },
+    };
 
     // Cleanup on page navigation (Astro view transitions)
     document.addEventListener("astro:before-preparation", cleanup);

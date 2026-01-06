@@ -269,6 +269,13 @@ const maxSpeed = 30; // Maximum missile speed cap
     }
   }
 
+  // Global restart function that resets all missiles
+  function restartGame() {
+    resetSpeed();
+    initMissiles();
+    renderMissiles();
+  }
+
   // Ensure DOM is fully loaded before querying elements
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", startMissiles);
@@ -290,6 +297,7 @@ const maxSpeed = 30; // Maximum missile speed cap
     setSpeed,
     resetSpeed,
     resetMissile,
+    restartGame,
     getMissilePosition: (i) => {
       if (i < 0 || i >= numberOfMissiles) {
         console.warn(
