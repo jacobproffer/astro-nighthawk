@@ -27,7 +27,10 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
     const maxSpeed = 5;
     const friction = 0.92;
     const tiltAmount = 15; // degrees
-    const collisionDistance = 40; // pixels - collision threshold
+    // Collision hitbox reduction - makes the effective collision area smaller than visual size
+    // This accounts for the transparent areas and makes collision feel more fair
+    const hitboxPaddingX = 15; // pixels to reduce from each side (30px total width reduction)
+    const hitboxPaddingY = 80; // pixels to reduce from top/bottom (160px total height reduction)
 
     const keys = {
       a: false,
@@ -105,19 +108,38 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
       // Check for collisions with missiles if game is active
       if (window.gameAPI?.gameStarted && window.gameAPI?.missiles) {
         const nighthawkRect = nighthawk.getBoundingClientRect();
-        const nighthawkCenterX = nighthawkRect.left + nighthawkRect.width / 2;
-        const nighthawkCenterY = nighthawkRect.top + nighthawkRect.height / 2;
+
+        // Create a tighter hitbox for the nighthawk by reducing its bounding box
+        const nighthawkHitbox = {
+          left: nighthawkRect.left + hitboxPaddingX,
+          right: nighthawkRect.right - hitboxPaddingX,
+          top: nighthawkRect.top + hitboxPaddingY,
+          bottom: nighthawkRect.bottom - hitboxPaddingY,
+        };
 
         const missileCount = window.gameAPI.missiles.getMissileCount();
+        const missileSize = window.gameAPI.missiles.getMissileSize();
+        const missileHalfSize = missileSize / 2;
+
         for (let i = 0; i < missileCount; i++) {
           const missilePos = window.gameAPI.missiles.getMissilePosition(i);
           if (missilePos && missilePos.onScreen) {
-            // Calculate distance between centers (missilePos.x and missilePos.y are already the missile center)
-            const dX = nighthawkCenterX - missilePos.x;
-            const dY = nighthawkCenterY - missilePos.y;
-            const distance = Math.sqrt(dX * dX + dY * dY);
+            // Calculate missile bounding box from its center position
+            const missileHitbox = {
+              left: missilePos.x - missileHalfSize,
+              right: missilePos.x + missileHalfSize,
+              top: missilePos.y - missileHalfSize,
+              bottom: missilePos.y + missileHalfSize,
+            };
 
-            if (distance < collisionDistance) {
+            // Check for rectangular collision (AABB - Axis-Aligned Bounding Box)
+            const collision =
+              nighthawkHitbox.left < missileHitbox.right &&
+              nighthawkHitbox.right > missileHitbox.left &&
+              nighthawkHitbox.top < missileHitbox.bottom &&
+              nighthawkHitbox.bottom > missileHitbox.top;
+
+            if (collision) {
               // Collision detected!
               window.gameAPI.missiles.explode(i);
               // Trigger game over
