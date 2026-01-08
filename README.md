@@ -1,6 +1,6 @@
 # Nighthawk
 
-Made with Astro and Tailwind.
+Nighthawk is a fast-paced aerial survival game where you pilot an F-117 Nighthawk stealth fighter, dodging incoming missiles while they rain down from above. Use the A and D keys to maneuver your aircraft left and right, tilting and gliding through the cloudy skies. As you survive, the missiles increase in speed, testing your reflexes and precision. One hit ends your flight—how long can you stay airborne?
 
 ## 🧞 Commands
 
