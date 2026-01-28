@@ -200,7 +200,10 @@
 
         // Update menu state and button text
         startMenu.dataset.gameState = "gameover";
-        startButton.textContent = "Restart Game";
+        const textSpan = startButton.querySelector("span.text-gray-200");
+        if (textSpan) {
+          textSpan.textContent = "Restart Mission";
+        }
 
         // Show the menu again
         startMenu.style.opacity = "1";
