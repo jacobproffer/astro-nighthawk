@@ -1,0 +1,132 @@
+---
+// TouchControls component - On-screen steering for touch devices.
+// Each half of the screen is a touch zone, with a visible button in its bottom corner.
+const controls = [
+  { direction: "a", label: "Move left", points: "15 18 9 12 15 6" },
+  { direction: "d", label: "Move right", points: "9 18 15 12 9 6" },
+];
+---
+
+<div
+  id="touch-controls"
+  class="absolute inset-0 z-40 hidden pointer-coarse:flex select-none touch-none [-webkit-touch-callout:none]"
+>
+  {
+    controls.map(({ direction, label, points }) => (
+      <button
+        type="button"
+        data-direction={direction}
+        aria-label={label}
+        class:list={[
+          "group flex-1 flex items-end p-4 pb-[max(1rem,env(safe-area-inset-bottom))] outline-none",
+          direction === "a" ? "justify-start" : "justify-end",
+        ]}
+      >
+        <span
+          class="flex items-center justify-center size-16 border border-green-400/50 bg-black/20 backdrop-blur-sm text-green-300 transition duration-100 group-data-active:bg-green-500/30 group-data-active:border-green-400 group-data-active:scale-95"
+          style="clip-path: polygon(0px 0px, calc(100% - 10px) 0px, 100% 10px, 100% 100%, 10px 100%, 0px calc(100% - 10px));"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="w-7 h-7"
+            aria-hidden="true"
+          >
+            <polyline points={points} />
+          </svg>
+        </span>
+      </button>
+    ))
+  }
+</div>
+
+<script>
+  const touchControls = document.getElementById("touch-controls");
+
+  if (touchControls) {
+    const buttons = Array.from(
+      touchControls.querySelectorAll<HTMLElement>("[data-direction]")
+    );
+
+    // Which side of the screen each active pointer is on
+    const pointers = new Map<number, "a" | "d">();
+
+    function sideFor(clientX: number): "a" | "d" {
+      const rect = touchControls!.getBoundingClientRect();
+      return clientX < rect.left + rect.width / 2 ? "a" : "d";
+    }
+
+    // Sync aircraft input and button highlight with the active pointers
+    function update() {
+      const held = new Set(pointers.values());
+      for (const button of buttons) {
+        const direction = button.dataset.direction as "a" | "d";
+        const pressed = held.has(direction);
+        button.toggleAttribute("data-active", pressed);
+        window.gameAPI?.nighthawk?.setDirection(direction, pressed);
+      }
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      event.preventDefault();
+      pointers.set(event.pointerId, sideFor(event.clientX));
+      update();
+    };
+
+    // Sliding a finger across the middle switches direction without lifting
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!pointers.has(event.pointerId)) {
+        return;
+      }
+      const side = sideFor(event.clientX);
+      if (pointers.get(event.pointerId) !== side) {
+        pointers.set(event.pointerId, side);
+        update();
+      }
+    };
+
+    const handlePointerEnd = (event: PointerEvent) => {
+      if (pointers.delete(event.pointerId)) {
+        update();
+      }
+    };
+
+    const releaseAll = () => {
+      pointers.clear();
+      update();
+    };
+
+    const preventContextMenu = (event: Event) => {
+      event.preventDefault();
+    };
+
+    touchControls.addEventListener("pointerdown", handlePointerDown);
+    touchControls.addEventListener("pointermove", handlePointerMove);
+    touchControls.addEventListener("pointerup", handlePointerEnd);
+    touchControls.addEventListener("pointercancel", handlePointerEnd);
+    touchControls.addEventListener("lostpointercapture", handlePointerEnd);
+    touchControls.addEventListener("contextmenu", preventContextMenu);
+    window.addEventListener("gameover", releaseAll);
+    window.addEventListener("blur", releaseAll);
+
+    // Cleanup function to remove event listeners
+    const cleanup = () => {
+      touchControls.removeEventListener("pointerdown", handlePointerDown);
+      touchControls.removeEventListener("pointermove", handlePointerMove);
+      touchControls.removeEventListener("pointerup", handlePointerEnd);
+      touchControls.removeEventListener("pointercancel", handlePointerEnd);
+      touchControls.removeEventListener("lostpointercapture", handlePointerEnd);
+      touchControls.removeEventListener("contextmenu", preventContextMenu);
+      window.removeEventListener("gameover", releaseAll);
+      window.removeEventListener("blur", releaseAll);
+    };
+
+    // Cleanup on page navigation (Astro view transitions)
+    document.addEventListener("astro:before-preparation", cleanup);
+  }
+</script>

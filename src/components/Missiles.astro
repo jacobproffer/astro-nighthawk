@@ -148,6 +148,8 @@ const maxSpeed = 30; // Maximum missile speed cap
       return;
     }
     onScreen[i] = false;
+    // Render immediately so the missile disappears even if the loop is paused
+    renderMissiles();
   }
 
   // Callback for when missile reaches bottom (for scoring)

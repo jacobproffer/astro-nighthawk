@@ -96,6 +96,7 @@
             class="lucide lucide-play w-5 h-5 text-green-300 group-hover:text-green-400 transition-colors"
             ><polygon points="6 3 20 12 6 21 6 3"></polygon></svg
           ><span
+            data-start-label
             class="text-white group-hover:text-gray-200 tracking-widest transition-colors"
             >Start Mission</span
           ><span class="ml-auto text-green-500/50 font-mono text-sm">[01]</span>
@@ -115,7 +116,12 @@
     >
       <div class="flex items-center gap-2">
         <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        <p class="uppercase">Use the A and D keys to move the aircraft.</p>
+        <p class="uppercase pointer-coarse:hidden">
+          Use the A and D keys to move the aircraft.
+        </p>
+        <p class="uppercase hidden pointer-coarse:block">
+          Hold the left or right side of the screen to move the aircraft.
+        </p>
       </div>
     </div>
   </div>
@@ -194,7 +200,7 @@
 
         // Update menu state and button text
         startMenu.dataset.gameState = "gameover";
-        const textSpan = startButton.querySelector("span.text-gray-200");
+        const textSpan = startButton.querySelector("[data-start-label]");
         if (textSpan) {
           textSpan.textContent = "Restart Mission";
         }
