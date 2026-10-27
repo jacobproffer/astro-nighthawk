@@ -5,7 +5,8 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
 
 <Image
   id="nighthawk"
-  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5"
+  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5 pointer-events-none select-none"
+  draggable="false"
   src={nighthawk}
   alt="F-117 Nighthawk"
   widths={[68, 136]}
@@ -140,12 +141,28 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
               nighthawkHitbox.bottom > missileHitbox.top;
 
             if (collision) {
-              // Collision detected!
-              window.gameAPI.missiles.explode(i);
-              // Trigger game over
-              window.dispatchEvent(new CustomEvent("gameover"));
+              // Collision detected! Stop collision checks and player input,
+              // but leave missiles flying while the explosion plays
+              window.gameAPI.gameStarted = false;
+              window.gameAPI.playerCanMove = false;
+              keys.a = false;
+              keys.d = false;
               // Stop animation but keep event listeners
               stopAnimation();
+
+              // Impact point is the midpoint between the plane and missile centres
+              const impactX =
+                (missilePos.x + (nighthawkHitbox.left + nighthawkHitbox.right) / 2) / 2;
+              const impactY =
+                (missilePos.y + (nighthawkHitbox.top + nighthawkHitbox.bottom) / 2) / 2;
+
+              window.gameAPI.missiles.explode(i);
+              nighthawk.style.visibility = "hidden";
+
+              // Trigger game over once the explosion has played out
+              playExplosion(impactX, impactY).then(() => {
+                window.dispatchEvent(new CustomEvent("gameover"));
+              });
               return;
             }
           }
@@ -159,6 +176,118 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
         isAnimating = false;
         animationFrameId = null;
       }
+    }
+
+    // Play an explosion at a viewport position, resolving when it finishes
+    function playExplosion(x: number, y: number): Promise<void> {
+      const container = document.getElementById("missile-container");
+      if (
+        !container ||
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        return Promise.resolve();
+      }
+
+      // Convert viewport coordinates to container coordinates
+      const containerRect = container.getBoundingClientRect();
+      const localX = x - containerRect.left;
+      const localY = y - containerRect.top;
+
+      const layer = document.createElement("div");
+      layer.className = "absolute z-30 pointer-events-none";
+      layer.style.left = `${localX}px`;
+      layer.style.top = `${localY}px`;
+      container.append(layer);
+
+      const animations: Promise<unknown>[] = [];
+
+      function spawn(
+        className: string,
+        keyframes: Keyframe[],
+        options: KeyframeAnimationOptions
+      ) {
+        const el = document.createElement("div");
+        el.className = `absolute left-0 top-0 rounded-full ${className}`;
+        layer.append(el);
+        const animation = el.animate(keyframes, { fill: "forwards", ...options });
+        animations.push(animation.finished);
+      }
+
+      // Bright initial flash
+      spawn(
+        "size-40 bg-white/90 blur-md",
+        [
+          { transform: "translate(-50%, -50%) scale(0.2)", opacity: 1 },
+          { transform: "translate(-50%, -50%) scale(1.4)", opacity: 0 },
+        ],
+        { duration: 350, easing: "ease-out" }
+      );
+
+      // Expanding fireball
+      spawn(
+        "size-28 bg-radial from-yellow-200 via-orange-500 to-red-700/0",
+        [
+          { transform: "translate(-50%, -50%) scale(0.1)", opacity: 1 },
+          { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.4 },
+          { transform: "translate(-50%, -50%) scale(1.6)", opacity: 0 },
+        ],
+        { duration: 900, easing: "cubic-bezier(.2,.8,.3,1)" }
+      );
+
+      // Lingering smoke
+      spawn(
+        "size-32 bg-gray-700/60 blur-lg",
+        [
+          { transform: "translate(-50%, -50%) scale(0.3)", opacity: 0 },
+          { transform: "translate(-50%, -50%) scale(1)", opacity: 0.8, offset: 0.3 },
+          { transform: "translate(-50%, calc(-50% - 40px)) scale(1.8)", opacity: 0 },
+        ],
+        { duration: 1400, delay: 150, easing: "ease-out" }
+      );
+
+      // Sparks and debris flying outward
+      const sparkColors = ["bg-yellow-200", "bg-orange-400", "bg-red-500", "bg-white"];
+      for (let n = 0; n < 28; n++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 50 + Math.random() * 110;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        const color = sparkColors[n % sparkColors.length];
+        const size = Math.random() > 0.6 ? "size-2" : "size-1.5";
+        spawn(
+          `${size} ${color}`,
+          [
+            { transform: "translate(-50%, -50%) scale(1.5)", opacity: 1 },
+            {
+              transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy + 30}px)) scale(0)`,
+              opacity: 0,
+            },
+          ],
+          {
+            duration: 600 + Math.random() * 500,
+            easing: "cubic-bezier(.15,.8,.3,1)",
+          }
+        );
+      }
+
+      // Shake the scene
+      const scene = container.parentElement;
+      scene?.animate(
+        [
+          { transform: "translate(0, 0)" },
+          { transform: "translate(-8px, 5px)" },
+          { transform: "translate(7px, -6px)" },
+          { transform: "translate(-5px, -3px)" },
+          { transform: "translate(4px, 4px)" },
+          { transform: "translate(-2px, 1px)" },
+          { transform: "translate(0, 0)" },
+        ],
+        { duration: 450, easing: "ease-out" }
+      );
+
+      return Promise.all(animations).then(() => {
+        layer.remove();
+      });
     }
 
     function startAnimation() {
@@ -243,6 +372,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
       tilt = 0;
       keys.a = false;
       keys.d = false;
+      nighthawk.style.visibility = "";
       updatePosition();
     }
 
@@ -273,6 +403,20 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
     }
     window.gameAPI.nighthawk = {
       reset,
+      // Lets non-keyboard input (e.g. touch controls) steer the aircraft
+      setDirection: (direction: "a" | "d", pressed: boolean) => {
+        // Releases always apply; presses only while the player can move
+        if (pressed && !window.gameAPI?.playerCanMove) {
+          return;
+        }
+        if (keys[direction] === pressed) {
+          return;
+        }
+        keys[direction] = pressed;
+        if (pressed) {
+          startAnimation();
+        }
+      },
       getNighthawkPosition: () => {
         const rect = nighthawk.getBoundingClientRect();
         return {

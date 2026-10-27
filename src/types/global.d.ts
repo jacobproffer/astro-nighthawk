@@ -26,6 +26,7 @@ interface GameAPI {
   };
   nighthawk?: {
     reset: () => void;
+    setDirection: (direction: "a" | "d", pressed: boolean) => void;
     getNighthawkPosition: () => { x: number; y: number };
   };
 }
