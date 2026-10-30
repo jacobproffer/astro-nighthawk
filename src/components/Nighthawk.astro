@@ -1,23 +1,40 @@
 ---
 import { Image } from "astro:assets";
-import nighthawk from "@assets/img/nighthawk-with-tail.png";
+import aircraft from "@assets/img/nighthawk-aircraft.png";
+import trails from "@assets/img/nighthawk-trails.png";
 ---
 
-<Image
+<!-- Aircraft and air streams are separate images so only the aircraft is used for collisions -->
+<div
   id="nighthawk"
-  class="absolute z-20 bottom-0 left-1/2 w-17 h-116.5 pointer-events-none select-none"
-  draggable="false"
-  src={nighthawk}
-  alt="F-117 Nighthawk"
-  widths={[68, 136]}
-  sizes="68px"
-  loading="eager"
-/>
+  class="absolute z-20 bottom-0 left-1/2 w-17 origin-[50%_52px] pointer-events-none select-none"
+>
+  <Image
+    id="nighthawk-aircraft"
+    class="block w-17 h-26"
+    draggable="false"
+    src={aircraft}
+    alt="F-117 Nighthawk"
+    widths={[68, 136]}
+    sizes="68px"
+    loading="eager"
+  />
+  <Image
+    class="block w-17 h-90.5"
+    draggable="false"
+    src={trails}
+    alt=""
+    widths={[68, 136]}
+    sizes="68px"
+    loading="eager"
+  />
+</div>
 
 <script>
   const nighthawk = document.getElementById("nighthawk") as HTMLElement;
+  const aircraft = document.getElementById("nighthawk-aircraft") as HTMLElement;
 
-  if (nighthawk) {
+  if (nighthawk && aircraft) {
     let xPosition = 0;
     let xVelocity = 0;
     let tilt = 0;
@@ -28,10 +45,11 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
     const maxSpeed = 5;
     const friction = 0.92;
     const tiltAmount = 15; // degrees
-    // Collision hitbox reduction - makes the effective collision area smaller than visual size
-    // This accounts for the transparent areas and makes collision feel more fair
-    const hitboxPaddingX = 15; // pixels to reduce from each side (30px total width reduction)
-    const hitboxPaddingY = 80; // pixels to reduce from top/bottom (160px total height reduction)
+    // Collision hitbox reduction - shrinks the aircraft's box (not the air streams)
+    // so near misses past the narrow nose and swept wings feel fair
+    const hitboxPaddingX = 8; // pixels to reduce from each side
+    const hitboxPaddingTop = 8; // pixels to reduce from the nose
+    const hitboxPaddingBottom = 4; // pixels to reduce from the tail
 
     const keys = {
       a: false,
@@ -108,14 +126,14 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
 
       // Check for collisions with missiles if game is active
       if (window.gameAPI?.gameStarted && window.gameAPI?.missiles) {
-        const nighthawkRect = nighthawk.getBoundingClientRect();
+        const nighthawkRect = aircraft.getBoundingClientRect();
 
         // Create a tighter hitbox for the nighthawk by reducing its bounding box
         const nighthawkHitbox = {
           left: nighthawkRect.left + hitboxPaddingX,
           right: nighthawkRect.right - hitboxPaddingX,
-          top: nighthawkRect.top + hitboxPaddingY,
-          bottom: nighthawkRect.bottom - hitboxPaddingY,
+          top: nighthawkRect.top + hitboxPaddingTop,
+          bottom: nighthawkRect.bottom - hitboxPaddingBottom,
         };
 
         const missileCount = window.gameAPI.missiles.getMissileCount();
@@ -152,9 +170,13 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
 
               // Impact point is the midpoint between the plane and missile centres
               const impactX =
-                (missilePos.x + (nighthawkHitbox.left + nighthawkHitbox.right) / 2) / 2;
+                (missilePos.x +
+                  (nighthawkHitbox.left + nighthawkHitbox.right) / 2) /
+                2;
               const impactY =
-                (missilePos.y + (nighthawkHitbox.top + nighthawkHitbox.bottom) / 2) / 2;
+                (missilePos.y +
+                  (nighthawkHitbox.top + nighthawkHitbox.bottom) / 2) /
+                2;
 
               window.gameAPI.missiles.explode(i);
               nighthawk.style.visibility = "hidden";
@@ -169,8 +191,14 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
         }
       }
 
-      // Continue animation if there's movement or keys are pressed
-      if (xVelocity !== 0 || keys.a || keys.d) {
+      // Continue animation if there's movement, keys are pressed, or the game is
+      // active (collisions must be checked even while the plane sits still)
+      if (
+        xVelocity !== 0 ||
+        keys.a ||
+        keys.d ||
+        window.gameAPI?.gameStarted
+      ) {
         animationFrameId = requestAnimationFrame(animate);
       } else {
         isAnimating = false;
@@ -204,12 +232,15 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
       function spawn(
         className: string,
         keyframes: Keyframe[],
-        options: KeyframeAnimationOptions
+        options: KeyframeAnimationOptions,
       ) {
         const el = document.createElement("div");
         el.className = `absolute left-0 top-0 rounded-full ${className}`;
         layer.append(el);
-        const animation = el.animate(keyframes, { fill: "forwards", ...options });
+        const animation = el.animate(keyframes, {
+          fill: "forwards",
+          ...options,
+        });
         animations.push(animation.finished);
       }
 
@@ -220,7 +251,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
           { transform: "translate(-50%, -50%) scale(0.2)", opacity: 1 },
           { transform: "translate(-50%, -50%) scale(1.4)", opacity: 0 },
         ],
-        { duration: 350, easing: "ease-out" }
+        { duration: 350, easing: "ease-out" },
       );
 
       // Expanding fireball
@@ -228,10 +259,14 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
         "size-28 bg-radial from-yellow-200 via-orange-500 to-red-700/0",
         [
           { transform: "translate(-50%, -50%) scale(0.1)", opacity: 1 },
-          { transform: "translate(-50%, -50%) scale(1)", opacity: 1, offset: 0.4 },
+          {
+            transform: "translate(-50%, -50%) scale(1)",
+            opacity: 1,
+            offset: 0.4,
+          },
           { transform: "translate(-50%, -50%) scale(1.6)", opacity: 0 },
         ],
-        { duration: 900, easing: "cubic-bezier(.2,.8,.3,1)" }
+        { duration: 900, easing: "cubic-bezier(.2,.8,.3,1)" },
       );
 
       // Lingering smoke
@@ -239,14 +274,26 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
         "size-32 bg-gray-700/60 blur-lg",
         [
           { transform: "translate(-50%, -50%) scale(0.3)", opacity: 0 },
-          { transform: "translate(-50%, -50%) scale(1)", opacity: 0.8, offset: 0.3 },
-          { transform: "translate(-50%, calc(-50% - 40px)) scale(1.8)", opacity: 0 },
+          {
+            transform: "translate(-50%, -50%) scale(1)",
+            opacity: 0.8,
+            offset: 0.3,
+          },
+          {
+            transform: "translate(-50%, calc(-50% - 40px)) scale(1.8)",
+            opacity: 0,
+          },
         ],
-        { duration: 1400, delay: 150, easing: "ease-out" }
+        { duration: 1400, delay: 150, easing: "ease-out" },
       );
 
       // Sparks and debris flying outward
-      const sparkColors = ["bg-yellow-200", "bg-orange-400", "bg-red-500", "bg-white"];
+      const sparkColors = [
+        "bg-yellow-200",
+        "bg-orange-400",
+        "bg-red-500",
+        "bg-white",
+      ];
       for (let n = 0; n < 28; n++) {
         const angle = Math.random() * Math.PI * 2;
         const distance = 50 + Math.random() * 110;
@@ -266,7 +313,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
           {
             duration: 600 + Math.random() * 500,
             easing: "cubic-bezier(.15,.8,.3,1)",
-          }
+          },
         );
       }
 
@@ -282,7 +329,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
           { transform: "translate(-2px, 1px)" },
           { transform: "translate(0, 0)" },
         ],
-        { duration: 450, easing: "ease-out" }
+        { duration: 450, easing: "ease-out" },
       );
 
       return Promise.all(animations).then(() => {
@@ -300,6 +347,11 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
     // Event handler functions
     const handleResize = () => {
       calculateBoundaries();
+    };
+
+    // Run the loop for the whole game so collisions are always checked
+    const handleGameStart = () => {
+      startAnimation();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -380,6 +432,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
     function cleanup() {
       stopAnimation();
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("gamestart", handleGameStart);
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
       // Clean up API
@@ -394,6 +447,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
 
     // Add event listeners
     window.addEventListener("resize", handleResize);
+    window.addEventListener("gamestart", handleGameStart);
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
 
@@ -418,7 +472,7 @@ import nighthawk from "@assets/img/nighthawk-with-tail.png";
         }
       },
       getNighthawkPosition: () => {
-        const rect = nighthawk.getBoundingClientRect();
+        const rect = aircraft.getBoundingClientRect();
         return {
           x: rect.left + rect.width / 2,
           y: rect.top + rect.height / 2,
