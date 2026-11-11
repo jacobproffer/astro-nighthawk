@@ -3,6 +3,14 @@
 @theme {
   --color-purple: #2e2031;
   --color-green: #6c999c;
+
+  /* Start menu: dusk briefing palette, pulled from the in-game sky */
+  --color-dusk: #130e18;
+  --color-bone: #ece4d6;
+  --color-amber: #f0a35e;
+
+  --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @keyframes scan {
@@ -16,4 +24,68 @@
 
 .animate-scan {
   animation: scan 1.5s ease-in-out infinite;
+}
+
+/* Start menu planform: lines draw in, then a slow scan sweeps the drawing */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(700px);
+    opacity: 0;
+  }
+}
+
+.planform-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+.animate-fade-up {
+  opacity: 0;
+  animation: fade-up 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.animate-sweep {
+  animation: sweep 6s ease-in-out 1.6s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planform-draw,
+  .animate-fade-up,
+  .animate-sweep {
+    animation: none;
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  .animate-sweep {
+    display: none;
+  }
 }
