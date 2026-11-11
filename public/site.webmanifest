@@ -1,0 +1,11 @@
+{
+  "name": "Nighthawk",
+  "short_name": "Nighthawk",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "theme_color": "#130e18",
+  "background_color": "#130e18",
+  "display": "standalone"
+}

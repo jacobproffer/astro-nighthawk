@@ -28,10 +28,19 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
     image: {
       url: defaultImageFile.toString(),
       secureUrl: defaultImageFile.toString(),
-      alt: "",
-      height: 1200,
-      width: 800,
+      alt: "Nighthawk: a line drawing of the F-117A stealth jet beside the game title on a dark dusk background.",
+      type: "image/jpeg",
+      width: 1200,
+      height: 630,
     },
+  }}
+  twitter={{
+    card: "summary_large_image",
+    title: seo?.title ?? siteName,
+    description: seo?.description ?? siteDescription,
+    image: defaultImageFile.toString(),
+    imageAlt:
+      "Nighthawk: a line drawing of the F-117A stealth jet beside the game title on a dark dusk background.",
   }}
   extend={{
     meta: [
