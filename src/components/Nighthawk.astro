@@ -4,10 +4,12 @@ import aircraft from "@assets/img/nighthawk-aircraft.png";
 import trails from "@assets/img/nighthawk-trails.png";
 ---
 
-<!-- Aircraft and air streams are separate images so only the aircraft is used for collisions -->
+<!-- Aircraft and air streams are separate images so only the aircraft is used for collisions.
+     On small screens the plane sits lower (trails run off the bottom of the scene, which
+     clips them) so there's more room to see incoming missiles. -->
 <div
   id="nighthawk"
-  class="absolute z-20 bottom-0 left-1/2 w-17 origin-[50%_52px] pointer-events-none select-none"
+  class="absolute z-20 bottom-0 max-md:-bottom-40 left-1/2 w-17 origin-[50%_52px] pointer-events-none select-none"
 >
   <Image
     id="nighthawk-aircraft"
